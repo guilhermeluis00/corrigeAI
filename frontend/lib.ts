@@ -1,0 +1,3 @@
+export const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000/api";
+export function token(){return typeof window === "undefined" ? null : localStorage.getItem("corrigeai_token")}
+export async function api(path:string, init:RequestInit={}){const headers=new Headers(init.headers); const t=token(); if(t)headers.set("Authorization",`Bearer ${t}`); if(init.body && !(init.body instanceof FormData))headers.set("Content-Type","application/json"); const r=await fetch(`${API_URL}${path}`,{...init,headers}); const d=await r.json().catch(()=>({})); if(!r.ok) throw new Error(d.mensagem||"Erro na API"); return d;}

@@ -1,0 +1,4 @@
+"use client";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+export default function Nav(){const router=useRouter(); return <nav style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:18,borderBottom:"1px solid #ddd",background:"white",gap:20}}><strong>CorrigeAI</strong><div style={{display:"flex",gap:14,flexWrap:"wrap",alignItems:"center"}}><Link href="/dashboard">Dashboard</Link><Link href="/turmas">Turmas</Link><Link href="/alunos">Alunos</Link><Link href="/provas">Provas</Link><Link href="/correcao">Correção</Link><button style={{border:0,borderRadius:8,padding:"10px 15px",background:"#eef2ff",color:"#2447bd",fontWeight:700,cursor:"pointer"}} onClick={()=>{localStorage.removeItem("corrigeai_token"); router.push("/login")}}>Sair</button></div></nav>}
