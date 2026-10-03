@@ -31,14 +31,15 @@ enum ResultadoStatus {
 }
 
 model Escola {
-  id        Int      @id @default(autoincrement())
-  nome      String
-  cnpj      String   @unique
-  email     String?
-  telefone  String?
-  endereco  String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id          Int          @id @default(autoincrement())
+  nome        String
+  cnpj        String       @unique
+  email       String?
+  telefone    String?
+  endereco    String?
+  ativo       Boolean      @default(true)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
 
   usuarios    Usuario[]
   turmas      Turma[]
@@ -47,165 +48,175 @@ model Escola {
 }
 
 model Usuario {
-  id       Int         @id @default(autoincrement())
-  nome     String
-  email    String      @unique
-  senha    String
-  tipo     TipoUsuario
-  ativo    Boolean     @default(true)
-  escolaId Int?
+  id             Int              @id @default(autoincrement())
+  nome           String
+  email          String           @unique
+  senha          String
+  tipo           TipoUsuario
+  ativo          Boolean          @default(true)
+  escolaId       Int?
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
 
-  escola      Escola?          @relation(fields: [escolaId], references: [id], onDelete: SetNull)
-  professores ProfessorTurma[]
-  provas      Prova[]          @relation("ProfessorProvas")
-  resultados  Resultado[]
-  createdAt   DateTime         @default(now())
-  updatedAt   DateTime         @updatedAt
+  escola         Escola?          @relation(fields: [escolaId], references: [id], onDelete: SetNull)
+  professores    ProfessorTurma[]
+  provas         Prova[]          @relation("ProfessorProvas")
+  resultados     Resultado[]
 }
 
 model Turma {
-  id       Int     @id @default(autoincrement())
-  codigo   String
-  nome     String
-  serie    String?
-  turno    Turno?
-  escolaId Int?
+  id             Int              @id @default(autoincrement())
+  codigo         String
+  nome           String
+  serie          String?
+  turno          Turno?
+  escolaId       Int?
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
 
-  escola      Escola?          @relation(fields: [escolaId], references: [id], onDelete: SetNull)
-  alunos      Aluno[]
-  professores ProfessorTurma[]
-  provas      Prova[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  escola         Escola?          @relation(fields: [escolaId], references: [id], onDelete: SetNull)
+  alunos         Aluno[]
+  professores    ProfessorTurma[]
+  provas         Prova[]
 
   @@unique([escolaId, codigo])
+  @@index([escolaId])
 }
 
 model ProfessorTurma {
-  id          Int      @id @default(autoincrement())
-  professorId Int
-  turmaId     Int
-  createdAt   DateTime @default(now())
+  id             Int       @id @default(autoincrement())
+  professorId    Int
+  turmaId        Int
+  createdAt      DateTime  @default(now())
 
-  professor Usuario @relation(fields: [professorId], references: [id], onDelete: Cascade)
-  turma     Turma   @relation(fields: [turmaId], references: [id], onDelete: Cascade)
+  professor      Usuario   @relation(fields: [professorId], references: [id], onDelete: Cascade)
+  turma          Turma     @relation(fields: [turmaId], references: [id], onDelete: Cascade)
 
   @@unique([professorId, turmaId])
+  @@index([turmaId])
 }
 
 model Aluno {
-  id        Int      @id @default(autoincrement())
-  nome      String
-  matricula String
-  email     String?
-  turmaId   Int
-  ativo     Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id             Int         @id @default(autoincrement())
+  nome           String
+  matricula      String
+  email          String?
+  turmaId        Int
+  ativo          Boolean     @default(true)
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
 
-  turma      Turma       @relation(fields: [turmaId], references: [id], onDelete: Cascade)
-  resultados Resultado[]
-  respostas  Resposta[]
+  turma          Turma       @relation(fields: [turmaId], references: [id], onDelete: Cascade)
+  resultados     Resultado[]
+  respostas      Resposta[]
 
   @@unique([turmaId, matricula])
+  @@index([turmaId])
 }
 
 model Disciplina {
-  id        Int     @id @default(autoincrement())
-  nome      String
-  descricao String?
-  escolaId  Int?
+  id             Int          @id @default(autoincrement())
+  nome           String
+  descricao      String?
+  escolaId       Int?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
 
-  escola Escola? @relation(fields: [escolaId], references: [id], onDelete: SetNull)
-  provas Prova[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  escola         Escola?      @relation(fields: [escolaId], references: [id], onDelete: SetNull)
+  provas         Prova[]
 
   @@unique([escolaId, nome])
+  @@index([escolaId])
 }
 
 model Prova {
-  id            Int         @id @default(autoincrement())
-  titulo        String
-  descricao     String?
-  dataAplicacao DateTime?
-  status        StatusProva @default(RASCUNHO)
+  id             Int              @id @default(autoincrement())
+  titulo         String
+  descricao      String?
+  dataAplicacao  DateTime?
+  status         StatusProva      @default(RASCUNHO)
+  professorId    Int?
+  disciplinaId   Int?
+  turmaId        Int?
+  escolaId       Int?
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
 
-  professorId  Int?
-  disciplinaId Int?
-  turmaId      Int?
-  escolaId     Int?
+  professor      Usuario?         @relation("ProfessorProvas", fields: [professorId], references: [id], onDelete: SetNull)
+  disciplina     Disciplina?      @relation(fields: [disciplinaId], references: [id], onDelete: SetNull)
+  turma          Turma?           @relation(fields: [turmaId], references: [id], onDelete: SetNull)
+  escola         Escola?          @relation(fields: [escolaId], references: [id], onDelete: SetNull)
+  questoes       Questao[]
+  resultados     Resultado[]
 
-  professor  Usuario?    @relation("ProfessorProvas", fields: [professorId], references: [id], onDelete: SetNull)
-  disciplina Disciplina? @relation(fields: [disciplinaId], references: [id], onDelete: SetNull)
-  turma      Turma?      @relation(fields: [turmaId], references: [id], onDelete: SetNull)
-  escola     Escola?     @relation(fields: [escolaId], references: [id], onDelete: SetNull)
-
-  questoes   Questao[]
-  resultados Resultado[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  @@index([escolaId])
+  @@index([professorId])
+  @@index([turmaId])
 }
 
 model Questao {
-  id           Int     @id @default(autoincrement())
-  provaId      Int
-  numero       Int
-  enunciado    String?
-  alternativaA String?
-  alternativaB String?
-  alternativaC String?
-  alternativaD String?
-  alternativaE String?
-  resposta     String
-  valor        Float   @default(1)
+  id             Int        @id @default(autoincrement())
+  provaId        Int
+  numero         Int
+  enunciado      String?
+  alternativaA   String?
+  alternativaB   String?
+  alternativaC   String?
+  alternativaD   String?
+  alternativaE   String?
+  resposta       String
+  valor          Float      @default(1)
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
 
-  prova     Prova      @relation(fields: [provaId], references: [id], onDelete: Cascade)
-  respostas Resposta[]
+  prova          Prova      @relation(fields: [provaId], references: [id], onDelete: Cascade)
+  respostas      Resposta[]
 
   @@unique([provaId, numero])
+  @@index([provaId])
 }
 
 model Resultado {
-  id             Int             @id @default(autoincrement())
+  id             Int              @id @default(autoincrement())
   provaId        Int
   alunoId        Int?
   usuarioId      Int?
-  status         ResultadoStatus @default(PROCESSANDO)
+  status         ResultadoStatus  @default(PROCESSANDO)
   nota           Float?
   totalQuestoes  Int?
   acertos        Int?
   erros          Int?
   imagemOriginal String?
   erroMensagem   String?
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
 
-  prova     Prova      @relation(fields: [provaId], references: [id], onDelete: Cascade)
-  aluno     Aluno?     @relation(fields: [alunoId], references: [id], onDelete: SetNull)
-  usuario   Usuario?   @relation(fields: [usuarioId], references: [id], onDelete: SetNull)
-  respostas Resposta[]
+  prova          Prova            @relation(fields: [provaId], references: [id], onDelete: Cascade)
+  aluno          Aluno?           @relation(fields: [alunoId], references: [id], onDelete: SetNull)
+  usuario        Usuario?         @relation(fields: [usuarioId], references: [id], onDelete: SetNull)
+  respostas      Resposta[]
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  @@index([provaId])
+  @@index([alunoId])
+  @@index([status])
 }
 
 model Resposta {
-  id          Int  @id @default(autoincrement())
-  resultadoId Int
-  alunoId     Int?
-  questaoId   Int
+  id             Int        @id @default(autoincrement())
+  resultadoId    Int
+  alunoId        Int?
+  questaoId      Int
+  respostaAluno  String?
+  correta        Boolean?
+  valorObtido    Float?
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
 
-  respostaAluno String?
-  correta       Boolean?
-  valorObtido   Float?
-
-  resultado Resultado @relation(fields: [resultadoId], references: [id], onDelete: Cascade)
-  aluno     Aluno?    @relation(fields: [alunoId], references: [id], onDelete: SetNull)
-  questao   Questao   @relation(fields: [questaoId], references: [id], onDelete: Cascade)
-
-  createdAt DateTime @default(now())
+  resultado      Resultado  @relation(fields: [resultadoId], references: [id], onDelete: Cascade)
+  aluno          Aluno?     @relation(fields: [alunoId], references: [id], onDelete: SetNull)
+  questao        Questao    @relation(fields: [questaoId], references: [id], onDelete: Cascade)
 
   @@unique([resultadoId, questaoId])
+  @@index([alunoId])
+  @@index([questaoId])
 }

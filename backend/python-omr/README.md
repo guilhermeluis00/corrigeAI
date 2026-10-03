@@ -1,18 +1,27 @@
-# CorrigeAI OMR — Python
+# CorrigeAI OMR
 
-Serviço separado para visão computacional. Recebe uma foto e prepara a etapa de detecção das marcações com OpenCV.
+Serviço separado de visão computacional para analisar as fotos das folhas de respostas.
 
-## Executar
+## Objetivo
 
-```bash
-python -m venv .venv
-.venv\Scripts\activate
-pip install -r requirements.txt
-uvicorn main:app --reload --port 8001
+O serviço receberá uma imagem e deverá:
+
+1. localizar a folha;
+2. corrigir perspectiva;
+3. localizar as regiões de marcação;
+4. identificar as alternativas marcadas;
+5. calcular uma confiança por questão;
+6. devolver JSON ao backend Node/TypeScript.
+
+## Saída esperada
+
+```json
+{
+  "questoes": [
+    { "numero": 1, "resposta": "B", "confianca": 0.98 },
+    { "numero": 2, "resposta": "D", "confianca": 0.96 }
+  ]
+}
 ```
 
-O Node chama `POST /omr/corrigir`.
-
-## Próxima etapa técnica
-
-O algoritmo deve ser criado em cima de um modelo fixo de folha: detectar contorno, corrigir perspectiva, binarizar, dividir as regiões das alternativas e medir a quantidade de pixels preenchidos por bolha. Depois é possível devolver algo como `{"1":"A","2":"C","3":"B"}` com uma confiança por questão.
+A versão inicial devolve 501 propositalmente para não produzir respostas falsas. O motor OpenCV deverá ser implementado antes da ativação da correção automática.
