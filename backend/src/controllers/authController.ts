@@ -70,75 +70,39 @@ export async function cadastro(req: Request, res: Response) {
     const email = String(req.body.email || "").trim().toLowerCase();
     const senha = String(req.body.senha || "");
     const tipo = String(req.body.tipo || "").toUpperCase();
-    const escolaIdInformado = req.body.escolaId ? Number(req.body.escolaId) : null;
+    const escolaId = req.body.escolaId ? Number(req.body.escolaId) : null;
 
     if (!nome || !email || !senha || !tipo) {
       return res.status(400).json({ mensagem: "Nome, e-mail, senha e tipo são obrigatórios." });
     }
-
     if (!TIPOS_VALIDOS.includes(tipo as (typeof TIPOS_VALIDOS)[number])) {
       return res.status(400).json({ mensagem: "Tipo de usuário inválido." });
     }
-
     if (senha.length < 6) {
       return res.status(400).json({ mensagem: "A senha deve ter pelo menos 6 caracteres." });
     }
 
     const existente = await prisma.usuario.findUnique({ where: { email } });
+    if (existente) return res.status(409).json({ mensagem: "Já existe um usuário com esse e-mail." });
 
-    if (existente) {
-      return res.status(409).json({ mensagem: "Já existe um usuário com esse e-mail." });
-    }
-
-    let escolaId = escolaIdInformado;
-
-    if (escolaId) {
-      const escola = await prisma.escola.findUnique({ where: { id: escolaId } });
-      if (!escola) return res.status(404).json({ mensagem: "Escola não encontrada." });
-    } else if (tipo !== "DIRETOR") {
-      return res.status(400).json({
-        mensagem: "Professores e coordenadores precisam ser vinculados a uma escola. Informe o escolaId."
-      });
-    }
-
-    const resultado = await prisma.$transaction(async (tx) => {
-      if (!escolaId && tipo === "DIRETOR") {
-        const nomeEscola = String(req.body.escola?.nome || `${nome} — Escola`).trim();
-        const cnpjBase = String(req.body.escola?.cnpj || `AUTO-${Date.now()}-${Math.floor(Math.random() * 100000)}`)
-          .trim()
-          .slice(0, 40);
-
-        const escola = await tx.escola.create({
-          data: {
-            nome: nomeEscola,
-            cnpj: cnpjBase,
-            email: req.body.escola?.email ? String(req.body.escola.email).trim().toLowerCase() : email,
-            telefone: req.body.escola?.telefone ? String(req.body.escola.telefone).trim() : null,
-            endereco: req.body.escola?.endereco ? String(req.body.escola.endereco).trim() : null
-          }
-        });
-
-        escolaId = escola.id;
+    // Diretor: cria a conta sem escola e cadastra a escola logo em seguida (POST /api/escola).
+    // Professor/Coordenador: precisam do código (id) da escola informado pelo diretor.
+    if (tipo === "DIRETOR") {
+      if (escolaId) return res.status(400).json({ mensagem: "Diretores cadastram a própria escola após criar a conta." });
+    } else {
+      if (!escolaId || !Number.isInteger(escolaId)) {
+        return res.status(400).json({ mensagem: "Informe o código da escola fornecido pelo diretor." });
       }
+      const escola = await prisma.escola.findFirst({ where: { id: escolaId, ativo: true } });
+      if (!escola) return res.status(404).json({ mensagem: "Código de escola inválido." });
+    }
 
-      const senhaHash = await bcrypt.hash(senha, 10);
-
-      return tx.usuario.create({
-        data: {
-          nome,
-          email,
-          senha: senhaHash,
-          tipo: tipo as any,
-          escolaId
-        },
-        include: { escola: { select: { id: true, nome: true } } }
-      });
+    const usuario = await prisma.usuario.create({
+      data: { nome, email, senha: await bcrypt.hash(senha, 10), tipo: tipo as any, escolaId: tipo === "DIRETOR" ? null : escolaId },
+      include: { escola: { select: { id: true, nome: true } } }
     });
 
-    return res.status(201).json({
-      mensagem: "Usuário cadastrado com sucesso.",
-      usuario: usuarioPublico(resultado)
-    });
+    return res.status(201).json({ mensagem: "Usuário cadastrado com sucesso.", usuario: usuarioPublico(usuario) });
   } catch (error) {
     console.error("Erro no cadastro:", error);
     return res.status(500).json({ mensagem: "Erro interno ao cadastrar usuário." });

@@ -1,6 +1,7 @@
 import bcrypt from "bcryptjs";
 import type { Request, Response } from "express";
 import prisma from "../prisma.js";
+import { gerarToken } from "../utils/jwt.js";
 
 export async function listarUsuarios(req: Request, res: Response) {
   try {
@@ -96,5 +97,43 @@ export async function atualizarEscola(req: Request, res: Response) {
     console.error("Erro ao atualizar escola:", error);
     if (error?.code === "P2002") return res.status(409).json({ mensagem: "Este CNPJ já está cadastrado." });
     return res.status(500).json({ mensagem: "Erro ao atualizar escola." });
+  }
+}
+
+export async function criarEscola(req: Request, res: Response) {
+  try {
+    if (!req.usuario) return res.status(401).json({ mensagem: "Usuário não autenticado." });
+    const atual = await prisma.usuario.findUnique({ where: { id: req.usuario.id } });
+    if (!atual) return res.status(404).json({ mensagem: "Usuário não encontrado." });
+    if (atual.escolaId) return res.status(409).json({ mensagem: "Você já possui uma escola cadastrada." });
+
+    const nome = String(req.body.nome || "").trim();
+    const cnpj = String(req.body.cnpj || "").trim();
+    if (!nome || !cnpj) return res.status(400).json({ mensagem: "Nome da escola e CNPJ são obrigatórios." });
+    const opcional = (v: unknown) => (v ? String(v).trim() : null);
+
+    const { escola, usuario } = await prisma.$transaction(async (tx) => {
+      const escola = await tx.escola.create({
+        data: { nome, cnpj, email: opcional(req.body.email)?.toLowerCase() ?? null, telefone: opcional(req.body.telefone), endereco: opcional(req.body.endereco) }
+      });
+      const usuario = await tx.usuario.update({
+        where: { id: atual.id },
+        data: { escolaId: escola.id },
+        include: { escola: { select: { id: true, nome: true } } }
+      });
+      return { escola, usuario };
+    });
+
+    const token = gerarToken({ id: usuario.id, tipo: usuario.tipo, escolaId: usuario.escolaId });
+    return res.status(201).json({
+      mensagem: "Escola cadastrada com sucesso.",
+      token,
+      escola,
+      usuario: { id: usuario.id, nome: usuario.nome, email: usuario.email, tipo: usuario.tipo, ativo: usuario.ativo, escolaId: usuario.escolaId, escola: usuario.escola }
+    });
+  } catch (error: any) {
+    console.error("Erro ao criar escola:", error);
+    if (error?.code === "P2002") return res.status(409).json({ mensagem: "Este CNPJ já está cadastrado." });
+    return res.status(500).json({ mensagem: "Erro ao cadastrar escola." });
   }
 }

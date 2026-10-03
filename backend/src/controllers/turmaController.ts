@@ -166,3 +166,41 @@ export async function vincularProfessor(req: Request, res: Response) {
     return res.status(500).json({ mensagem: "Erro ao vincular professor." });
   }
 }
+
+export async function listarProfessores(req: Request, res: Response) {
+  try {
+    const professores = await prisma.usuario.findMany({
+      where: { escolaId: req.usuario?.escolaId, tipo: "PROFESSOR", ativo: true },
+      select: { id: true, nome: true, email: true },
+      orderBy: { nome: "asc" }
+    });
+    return res.json(professores);
+  } catch (error) {
+    console.error("Erro ao listar professores:", error);
+    return res.status(500).json({ mensagem: "Erro ao listar professores." });
+  }
+}
+
+// Define (substitui) a lista de professores que dão aula e têm acesso à turma.
+export async function definirProfessores(req: Request, res: Response) {
+  try {
+    const turmaId = Number(req.params.id);
+    const ids: number[] = Array.isArray(req.body.professorIds) ? [...new Set<number>(req.body.professorIds.map(Number))].filter(Boolean) : [];
+
+    const turma = await prisma.turma.findFirst({ where: { id: turmaId, escolaId: req.usuario?.escolaId } });
+    if (!turma) return res.status(404).json({ mensagem: "Turma não encontrada." });
+
+    const validos = await prisma.usuario.findMany({ where: { id: { in: ids }, escolaId: req.usuario?.escolaId, tipo: "PROFESSOR", ativo: true }, select: { id: true } });
+    if (validos.length !== ids.length) return res.status(400).json({ mensagem: "Há professores inválidos para esta escola." });
+
+    await prisma.$transaction([
+      prisma.professorTurma.deleteMany({ where: { turmaId } }),
+      prisma.professorTurma.createMany({ data: ids.map((professorId) => ({ professorId, turmaId })) })
+    ]);
+
+    return res.json({ mensagem: "Professores da turma atualizados." });
+  } catch (error) {
+    console.error("Erro ao definir professores:", error);
+    return res.status(500).json({ mensagem: "Erro ao atualizar professores da turma." });
+  }
+}

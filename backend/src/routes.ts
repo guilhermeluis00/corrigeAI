@@ -11,7 +11,9 @@ import {
   criarTurma,
   atualizarTurma,
   excluirTurma,
-  vincularProfessor
+  vincularProfessor,
+  listarProfessores,
+  definirProfessores
 } from "./controllers/turmaController.js";
 import {
   listarAlunos,
@@ -35,19 +37,31 @@ import {
   criarUsuario,
   atualizarUsuario,
   escolaAtual,
-  atualizarEscola
+  atualizarEscola,
+  criarEscola
 } from "./controllers/gestaoController.js";
 import { perfil, atualizarPerfil } from "./controllers/perfilController.js";
 import { processarFoto, statusCorrecao } from "./controllers/correcaoController.js";
 import { autenticar } from "./middleware/auth.js";
 import { permitir } from "./middleware/authorize.js";
 import { uploadImagem } from "./middleware/upload.js";
+import { exigirEscola } from "./middleware/escola.js";
 
 const router = Router();
 
 router.post("/auth/login", login);
 router.post("/auth/cadastro", cadastro);
 router.get("/auth/me", autenticar, me);
+
+router.get("/perfil", autenticar, perfil);
+router.put("/perfil", autenticar, atualizarPerfil);
+router.post("/escola", autenticar, permitir("DIRETOR"), criarEscola);
+
+// Tudo abaixo exige usuário autenticado COM escola cadastrada.
+router.use(autenticar, exigirEscola);
+
+router.get("/professores", permitir("COORDENADOR", "DIRETOR"), listarProfessores);
+router.put("/turmas/:id/professores", permitir("COORDENADOR", "DIRETOR"), definirProfessores);
 
 router.get("/dashboard", autenticar, dashboard);
 
@@ -85,9 +99,6 @@ router.post("/gestao/usuarios", autenticar, permitir("DIRETOR"), criarUsuario);
 router.put("/gestao/usuarios/:id", autenticar, permitir("DIRETOR"), atualizarUsuario);
 router.get("/gestao/escola", autenticar, permitir("DIRETOR"), escolaAtual);
 router.put("/gestao/escola", autenticar, permitir("DIRETOR"), atualizarEscola);
-
-router.get("/perfil", autenticar, perfil);
-router.put("/perfil", autenticar, atualizarPerfil);
 
 router.post("/correcoes/foto", autenticar, uploadImagem.single("imagem"), processarFoto);
 router.get("/correcoes/:id", autenticar, statusCorrecao);
