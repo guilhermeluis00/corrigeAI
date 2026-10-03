@@ -20,6 +20,8 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   return body as T;
 }
 
+const j = (method: string, body: unknown) => ({ method, body: JSON.stringify(body) });
+
 export const api = {
   login: (email:string, senha:string) => request<any>('/auth/login',{method:'POST',body:JSON.stringify({email,senha})}),
   cadastro: (data:any) => request<any>('/auth/cadastro',{method:'POST',body:JSON.stringify(data)}),
@@ -30,6 +32,21 @@ export const api = {
   resultados: () => request<any>('/resultados'),
   relatorios: () => request<any>('/relatorios'),
   dashboard: () => request<any>('/dashboard'),
+  criarEscola: (d:any) => request<any>('/escola', j('POST', d)),
+  escola: () => request<any>('/gestao/escola'),
+  usuarios: () => request<any[]>('/gestao/usuarios'),
+  criarUsuario: (d:any) => request<any>('/gestao/usuarios', j('POST', d)),
+  atualizarUsuario: (id:number, d:any) => request<any>(`/gestao/usuarios/${id}`, j('PUT', d)),
+  professores: () => request<any[]>('/professores'),
+  criarTurma: (d:any) => request<any>('/turmas', j('POST', d)),
+  atualizarTurma: (id:number, d:any) => request<any>(`/turmas/${id}`, j('PUT', d)),
+  excluirTurma: (id:number) => request<any>(`/turmas/${id}`, { method: 'DELETE' }),
+  definirProfessores: (id:number, professorIds:number[]) => request<any>(`/turmas/${id}/professores`, j('PUT', { professorIds })),
+  criarAluno: (d:any) => request<any>('/alunos', j('POST', d)),
+  atualizarAluno: (id:number, d:any) => request<any>(`/alunos/${id}`, j('PUT', d)),
+  excluirAluno: (id:number) => request<any>(`/alunos/${id}`, { method: 'DELETE' }),
+  perfil: () => request<any>('/perfil'),
+  atualizarPerfil: (d:any) => request<any>('/perfil', j('PUT', d)),
   uploadCorrecao: (file:File, provaId:string, alunoId:string) => {
     const form = new FormData(); form.append('imagem',file); form.append('provaId',provaId); form.append('alunoId',alunoId);
     return request<any>('/correcoes/foto',{method:'POST',body:form});

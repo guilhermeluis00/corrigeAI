@@ -1,6 +1,7 @@
 import { NavLink, useNavigate } from 'react-router-dom';
 import { BookOpen, ClipboardCheck, FileText, LayoutDashboard, LogOut, Menu, Settings, Users, BarChart3, School, UserRound, X } from 'lucide-react';
 import { useEffect, useState, type ReactNode } from 'react';
+import { rotasPorPerfil, type Role } from '../services/permissoes';
 import './AppShell.css';
 
 type User = { nome?: string; tipo?: string; escola?: { nome?: string } };
@@ -29,7 +30,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   useEffect(() => { try { const raw = localStorage.getItem('usuario'); if (raw) setUser(JSON.parse(raw)); } catch {} }, []);
   const canReports = user.tipo === 'COORDENADOR' || user.tipo === 'DIRETOR';
   const canManage = user.tipo === 'DIRETOR';
-  const visible = items.filter((it) => (it.to === '/relatorios' ? canReports : it.to === '/gestao' ? canManage : true));
+  const visible = items.filter((it) => (rotasPorPerfil[(user.tipo as Role) || 'PROFESSOR'] || []).includes(it.to));
   const initials = (user.nome || 'U').split(' ').map(p => p[0]).slice(0,2).join('').toUpperCase();
   function logout() { localStorage.removeItem('token'); localStorage.removeItem('usuario'); nav('/login'); }
   return <div className="shell">

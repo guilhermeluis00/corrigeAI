@@ -1,3 +1,35 @@
-import { AppShell } from '../../components/AppShell';import { Download } from 'lucide-react';import '../Module.css';
-export default function Relatorios(){return <AppShell><div className="container page"><div className="page-head"><div><h1 className="page-title">Relatórios</h1><p className="page-subtitle">Indicadores para acompanhar desempenho por turma e disciplina.</p></div><button className="btn btn-primary"><Download size={15}/> Exportar relatório</button></div><div className="grid grid-4 cards-spaced"><div className="card stat"><div className="stat-label">Média da escola</div><div className="stat-value">7,4</div><div className="stat-meta metric-green">+0,4 no período</div></div><div className="card stat"><div className="stat-label">Aproveitamento</div><div className="stat-value">83%</div><div className="stat-meta">últimas avaliações</div></div><div className="card stat"><div className="stat-label">Melhor turma</div><div className="stat-value">9º A</div><div className="stat-meta">média 8,1</div></div><div className="card stat"><div className="stat-label">Atenção</div><div className="stat-value">6º B</div><div className="stat-meta">média 6,9</div></div></div><div className="split-2"><section className="card section-card"><div className="section-card-head"><div><h3>Média por disciplina</h3><p>Desempenho acumulado.</p></div></div><div className="card-pad"><Bars/></div></section><section className="card section-card"><div className="section-card-head"><div><h3>Desempenho por turma</h3><p>Média e aproveitamento.</p></div></div><div className="table-wrap"><table><thead><tr><th>Turma</th><th>Média</th><th>Aproveitamento</th></tr></thead><tbody><tr><td>9º A</td><td>8,1</td><td>91%</td></tr><tr><td>8º A</td><td>7,9</td><td>88%</td></tr><tr><td>8º B</td><td>7,5</td><td>82%</td></tr><tr><td>6º B</td><td>6,9</td><td>74%</td></tr></tbody></table></div></section></div></div></AppShell>}
-function Bars(){return <div style={{display:'grid',gap:14}}>{[['Matemática',79],['Português',83],['Ciências',80],['História',87],['Geografia',81]].map(([n,v],i)=><div key={n}><div style={{display:'flex',justifyContent:'space-between',fontSize:12,marginBottom:6}}><span>{n}</span><strong>{(Number(v)/10).toFixed(1)}</strong></div><div className="progress"><span style={{width:`${v}%`,background:i===3?'#0f2b43':'#15b893'}}/></div></div>)}</div>}
+import { useMemo } from 'react';
+import { AppShell } from '../../components/AppShell';
+import { api } from '../../services/api';
+import { useApi } from '../../services/useApi';
+import '../Module.css';
+
+const f = (n: number) => n.toFixed(1).replace('.', ',');
+
+export default function Relatorios() {
+  const { data, loading, erro } = useApi<any[]>(api.resultados);
+  const r = useMemo(() => {
+    const ok = (data || []).filter((x) => x.status === 'CONCLUIDA' && x.nota != null);
+    const por: Record<string, number[]> = {};
+    ok.forEach((x) => { const k = x.aluno?.turma?.nome || 'Sem turma'; (por[k] ||= []).push(Number(x.nota)); });
+    const notas = ok.map((x) => Number(x.nota));
+    const media = (a: number[]) => a.reduce((s, n) => s + n, 0) / a.length;
+    return { n: notas.length, media: notas.length ? media(notas) : null, aprov: notas.length ? (notas.filter((n) => n >= 6).length / notas.length) * 100 : null,
+      turmas: Object.entries(por).map(([t, a]) => ({ t, m: media(a), q: a.length })).sort((a, b) => b.m - a.m) };
+  }, [data]);
+  return (
+    <AppShell><div className="container page">
+      <div className="page-head"><div><h1 className="page-title">Relatórios</h1><p className="page-subtitle">Desempenho calculado a partir das correções concluídas.</p></div></div>
+      {erro && <div className="error-box">{erro}</div>}
+      <div className="grid grid-4 cards-spaced">
+        <div className="card stat"><div className="stat-label">Correções concluídas</div><div className="stat-value">{loading ? '…' : r.n}</div></div>
+        <div className="card stat"><div className="stat-label">Média geral</div><div className="stat-value">{r.media == null ? '—' : f(r.media)}</div></div>
+        <div className="card stat"><div className="stat-label">Aprovação (nota ≥ 6)</div><div className="stat-value">{r.aprov == null ? '—' : `${Math.round(r.aprov)}%`}</div></div>
+      </div>
+      <section className="card section-card"><div className="section-card-head"><div><h3>Média por turma</h3></div></div>
+        {!loading && r.turmas.length === 0 ? <p className="muted" style={{ padding: 16 }}>Ainda não há correções concluídas.</p> :
+          <div className="table-wrap"><table><thead><tr><th>Turma</th><th>Correções</th><th>Média</th></tr></thead><tbody>{r.turmas.map((x) => <tr key={x.t}><td><strong>{x.t}</strong></td><td>{x.q}</td><td>{f(x.m)}</td></tr>)}</tbody></table></div>}
+      </section>
+    </div></AppShell>
+  );
+}

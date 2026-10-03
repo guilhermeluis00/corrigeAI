@@ -1,11 +1,11 @@
 import { FormEvent, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { api } from '../../services/api';
+import { api, setSession } from '../../services/api';
 import '../Auth.css';
 
 export default function Cadastro() {
   const nav = useNavigate();
-  const [form, setForm] = useState({ nome: '', email: '', senha: '', tipo: 'PROFESSOR', escolaNome: '', escolaId: '' });
+  const [form, setForm] = useState({ nome: '', email: '', senha: '', tipo: 'PROFESSOR', escolaId: '' });
   const [loading, setLoading] = useState(false);
   const [erro, setErro] = useState('');
   const set = (k: string, v: string) => setForm((f) => ({ ...f, [k]: v }));
@@ -19,10 +19,7 @@ export default function Cadastro() {
       return;
     }
     const payload: Record<string, unknown> = { nome: form.nome.trim(), email: form.email.trim(), senha: form.senha, tipo: form.tipo };
-    if (diretor) {
-      if (!form.escolaNome.trim()) { setErro('Informe o nome da escola.'); return; }
-      payload.escola = { nome: form.escolaNome.trim() };
-    } else {
+    if (!diretor) {
       const id = Number(form.escolaId);
       if (!Number.isInteger(id) || id <= 0) { setErro('Informe o código da escola fornecido pelo diretor.'); return; }
       payload.escolaId = id;
@@ -30,7 +27,12 @@ export default function Cadastro() {
     setLoading(true);
     try {
       await api.cadastro(payload);
-      nav('/login');
+      if (diretor) {
+        // Diretor segue direto para o cadastro da escola.
+        const d = await api.login(form.email.trim(), form.senha);
+        setSession(d.token, d.usuario);
+        nav('/escola/nova');
+      } else nav('/login');
     } catch (err) {
       setErro(err instanceof Error ? err.message : 'Não foi possível criar a conta.');
     } finally {
@@ -67,9 +69,9 @@ export default function Cadastro() {
               </select>
             </div>
             {diretor ? (
-              <div className="field"><label>Nome da escola</label><input value={form.escolaNome} onChange={(e) => set('escolaNome', e.target.value)} placeholder="Ex.: Colégio Horizonte" /></div>
+              <p className="muted" style={{ fontSize: 13 }}>Depois de criar a conta, você cadastra a sua escola e recebe o código para repassar à equipe.</p>
             ) : (
-              <div className="field"><label>Código da escola</label><input inputMode="numeric" value={form.escolaId} onChange={(e) => set('escolaId', e.target.value.replace(/\D/g, ''))} placeholder="Fornecido pelo diretor" /></div>
+              <div className="field"><label>Código da escola</label><input inputMode="numeric" value={form.escolaId} onChange={(e) => set('escolaId', e.target.value.replace(/\D/g, ''))} placeholder="Código gerado quando o diretor cadastra a escola" /></div>
             )}
             <button className="btn btn-primary auth-submit" disabled={loading}>{loading ? 'Criando...' : 'Criar conta'}</button>
           </form>

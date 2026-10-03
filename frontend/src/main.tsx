@@ -18,6 +18,7 @@ import EditarProva from './pages/Provas/EditarProva';
 import ProvaDetalhe from './pages/Provas/ProvaDetalhe';
 import Relatorios from './pages/Relatorios/Relatorios';
 import Gestao from './pages/Gestao/Gestao';
+import CadastroEscola from './pages/Escola/CadastroEscola';
 import Perfil from './pages/Perfil/Perfil';
 
 function Private({ children }: {children: React.ReactNode}) { return <ProtectedRoute>{children}</ProtectedRoute>; }
@@ -39,6 +40,7 @@ function App(){
    <Route path="/provas/:id" element={<Private><ProvaDetalhe/></Private>}/>
    <Route path="/relatorios" element={<Private><Relatorios/></Private>}/>
    <Route path="/gestao" element={<Private><Gestao/></Private>}/>
+   <Route path="/escola/nova" element={<Private><CadastroEscola/></Private>}/>
    <Route path="/perfil" element={<Private><Perfil/></Private>}/>
    <Route path="/alunos/:id" element={<Private><AlunoDetalhe/></Private>}/>
    <Route path="*" element={<Navigate to="/" replace/>}/>

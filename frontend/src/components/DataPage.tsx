@@ -8,15 +8,15 @@ import '../pages/Module.css';
 export type Col<T> = { titulo: string; render: (row: T) => ReactNode };
 type Props<T> = {
   titulo: string; subtitulo: string; loader: () => Promise<T[]>; colunas: Col<T>[];
-  busca: (row: T) => string; novo?: { to: string; label: string }; resumo?: (rows: T[]) => { label: string; value: ReactNode }[];
+  busca: (row: T) => string; novo?: { to: string; label: string }; acoes?: ReactNode; reloadKey?: number; resumo?: (rows: T[]) => { label: string; value: ReactNode }[];
 };
 
 export function Badge({ children, tipo = 'neutral' }: { children: ReactNode; tipo?: 'success' | 'neutral' | 'warning' | 'danger' }) {
   return <span className={`badge badge-${tipo}`}>{children}</span>;
 }
 
-export function DataPage<T>({ titulo, subtitulo, loader, colunas, busca, novo, resumo }: Props<T>) {
-  const { data, loading, erro } = useApi<T[]>(loader);
+export function DataPage<T>({ titulo, subtitulo, loader, colunas, busca, novo, resumo, acoes, reloadKey = 0 }: Props<T>) {
+  const { data, loading, erro } = useApi<T[]>(loader, [reloadKey]);
   const [q, setQ] = useState('');
   const rows = useMemo(() => (data || []).filter((r) => busca(r).toLowerCase().includes(q.trim().toLowerCase())), [data, q]);
   const stats = resumo && data ? resumo(data) : [];
@@ -25,7 +25,7 @@ export function DataPage<T>({ titulo, subtitulo, loader, colunas, busca, novo, r
       <div className="container page">
         <div className="page-head">
           <div><h1 className="page-title">{titulo}</h1><p className="page-subtitle">{subtitulo}</p></div>
-          {novo && <Link className="btn btn-primary" to={novo.to}><Plus size={16} /> {novo.label}</Link>}
+          <div className="actions">{acoes}{novo && <Link className="btn btn-primary" to={novo.to}><Plus size={16} /> {novo.label}</Link>}</div>
         </div>
         {stats.length > 0 && <div className="grid grid-4 cards-spaced">{stats.map((s) => <div className="card stat" key={s.label}><div className="stat-label">{s.label}</div><div className="stat-value">{s.value}</div></div>)}</div>}
         <section className="card section-card">
