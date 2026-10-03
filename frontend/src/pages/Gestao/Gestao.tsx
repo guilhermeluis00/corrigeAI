@@ -4,6 +4,7 @@ import { AppShell } from '../../components/AppShell';
 import { Badge } from '../../components/DataPage';
 import { FormModal } from '../../components/FormModal';
 import { api, getUsuario } from '../../services/api';
+import { opcoesDisciplinas } from '../../services/disciplinas';
 import { useApi } from '../../services/useApi';
 import '../Module.css';
 
@@ -35,8 +36,8 @@ export default function Gestao() {
       <section className="card section-card">
         <div className="section-card-head"><div><h3>Usuários</h3><p>Repasse o código da escola para coordenadores e professores se cadastrarem sozinhos.</p></div></div>
         {us.loading ? <p className="muted" style={{ padding: 16 }}>Carregando...</p> : (
-          <div className="table-wrap"><table><thead><tr><th>Nome</th><th>E-mail</th><th>Perfil</th><th>Status</th><th>Ação</th></tr></thead>
-            <tbody>{lista.map((u) => <tr key={u.id}><td>{u.nome}</td><td>{u.email}</td><td>{perfis[u.tipo]}</td>
+          <div className="table-wrap"><table><thead><tr><th>Nome</th><th>E-mail</th><th>Perfil</th><th>Disciplina</th><th>Status</th><th>Ação</th></tr></thead>
+            <tbody>{lista.map((u) => <tr key={u.id}><td>{u.nome}</td><td>{u.email}</td><td>{perfis[u.tipo]}</td><td>{u.disciplina?.nome || '—'}</td>
               <td><Badge tipo={u.ativo ? 'success' : 'neutral'}>{u.ativo ? 'Ativo' : 'Inativo'}</Badge></td>
               <td>{u.id !== eu?.id && <button className="btn" onClick={() => alternar(u)}>{u.ativo ? 'Desativar' : 'Ativar'}</button>}</td></tr>)}</tbody></table></div>)}
       </section>
@@ -45,7 +46,8 @@ export default function Gestao() {
           <div className="card" key={l}><div className="muted">{l}</div><strong>{v || '—'}</strong></div>)}</div></section>}
       {novo && <FormModal titulo="Novo usuário" subtitulo="Cria o acesso já vinculado à sua escola." rotulo="Criar usuário"
         campos={[{ name: 'nome', label: 'Nome completo', required: true }, { name: 'email', label: 'E-mail', type: 'email', required: true }, { name: 'senha', label: 'Senha inicial (mín. 6)', type: 'password', required: true },
-          { name: 'tipo', label: 'Perfil', type: 'select', required: true, options: [{ value: 'PROFESSOR', label: 'Professor' }, { value: 'COORDENADOR', label: 'Coordenador' }] }]}
+          { name: 'tipo', label: 'Perfil', type: 'select', required: true, options: [{ value: 'PROFESSOR', label: 'Professor' }, { value: 'COORDENADOR', label: 'Coordenador' }] },
+          { name: 'disciplina', label: 'Disciplina que leciona', type: 'select', required: true, options: opcoesDisciplinas, visivelSe: (v) => v.tipo === 'PROFESSOR' }]}
         onClose={() => setNovo(false)} onSubmit={async (v) => { await api.criarUsuario(v); setRk((k) => k + 1); }} />}
     </div></AppShell>
   );

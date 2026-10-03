@@ -1,11 +1,12 @@
 import { FormEvent, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { api, setSession } from '../../services/api';
+import { DISCIPLINAS_EM } from '../../services/disciplinas';
 import '../Auth.css';
 
 export default function Cadastro() {
   const nav = useNavigate();
-  const [form, setForm] = useState({ nome: '', email: '', senha: '', tipo: 'PROFESSOR', escolaId: '' });
+  const [form, setForm] = useState({ nome: '', email: '', senha: '', tipo: 'PROFESSOR', escolaId: '', disciplina: '' });
   const [loading, setLoading] = useState(false);
   const [erro, setErro] = useState('');
   const set = (k: string, v: string) => setForm((f) => ({ ...f, [k]: v }));
@@ -23,6 +24,10 @@ export default function Cadastro() {
       const id = Number(form.escolaId);
       if (!Number.isInteger(id) || id <= 0) { setErro('Informe o código da escola fornecido pelo diretor.'); return; }
       payload.escolaId = id;
+      if (form.tipo === 'PROFESSOR') {
+        if (!form.disciplina) { setErro('Selecione a sua disciplina.'); return; }
+        payload.disciplina = form.disciplina;
+      }
     }
     setLoading(true);
     try {
@@ -73,6 +78,7 @@ export default function Cadastro() {
             ) : (
               <div className="field"><label>Código da escola</label><input inputMode="numeric" value={form.escolaId} onChange={(e) => set('escolaId', e.target.value.replace(/\D/g, ''))} placeholder="Código gerado quando o diretor cadastra a escola" /></div>
             )}
+            {form.tipo === 'PROFESSOR' && <div className="field"><label>Disciplina que leciona</label><select value={form.disciplina} onChange={(e) => set('disciplina', e.target.value)}><option value="">Selecione</option>{DISCIPLINAS_EM.map((d) => <option key={d}>{d}</option>)}</select></div>}
             <button className="btn btn-primary auth-submit" disabled={loading}>{loading ? 'Criando...' : 'Criar conta'}</button>
           </form>
           <div className="auth-bottom"><span>Já possui uma conta?</span><Link to="/login">Entrar</Link></div>

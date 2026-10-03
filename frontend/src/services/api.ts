@@ -47,6 +47,11 @@ export const api = {
   excluirAluno: (id:number) => request<any>(`/alunos/${id}`, { method: 'DELETE' }),
   perfil: () => request<any>('/perfil'),
   atualizarPerfil: (d:any) => request<any>('/perfil', j('PUT', d)),
+  disciplinas: () => request<any[]>('/disciplinas'),
+  prova: (id: number | string) => request<any>(`/provas/${id}`),
+  criarProva: (d: any) => request<any>('/provas', j('POST', d)),
+  atualizarProva: (id: number | string, d: any) => request<any>(`/provas/${id}`, j('PUT', d)),
+  excluirProva: (id: number | string) => request<any>(`/provas/${id}`, { method: 'DELETE' }),
   uploadCorrecao: (file:File, provaId:string, alunoId:string) => {
     const form = new FormData(); form.append('imagem',file); form.append('provaId',provaId); form.append('alunoId',alunoId);
     return request<any>('/correcoes/foto',{method:'POST',body:form});

@@ -17,7 +17,7 @@ export default function Turmas() {
     { name: 'nome', label: 'Nome', required: true, placeholder: 'Ex.: 8º Ano A' },
     { name: 'serie', label: 'Série', placeholder: 'Ex.: 8º Ano' },
     { name: 'turno', label: 'Turno', type: 'select', options: Object.entries(turnos).map(([value, label]) => ({ value, label })) },
-    { name: 'professorIds', label: 'Professores que dão aula nesta turma', type: 'checks', options: (prof.data || []).map((p) => ({ value: p.id, label: p.nome })) },
+    { name: 'professorIds', label: 'Professores que dão aula nesta turma', type: 'checks', options: (prof.data || []).map((p) => ({ value: p.id, label: p.disciplina?.nome ? `${p.nome} — ${p.disciplina.nome}` : p.nome })) },
   ];
 
   async function salvar(v: Record<string, any>) {

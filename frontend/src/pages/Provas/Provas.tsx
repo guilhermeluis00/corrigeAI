@@ -10,11 +10,12 @@ const data = (v?: string) => (v ? new Date(v).toLocaleDateString('pt-BR') : '—
 export default function Provas() {
   return <DataPage<any>
     titulo="Provas" subtitulo="Crie e acompanhe avaliações, questões e gabaritos."
-    loader={api.provas} busca={(p) => `${p.titulo} ${p.turma?.nome || ''} ${p.disciplina?.nome || ''}`}
+    loader={api.provas} busca={(p) => `${p.titulo} ${p.professor?.nome || ''} ${p.turma?.nome || ''} ${p.disciplina?.nome || ''}`}
     novo={{ to: '/provas/nova', label: 'Nova prova' }}
     colunas={[
       { titulo: 'Prova', render: (p) => <Link to={`/provas/${p.id}`}><strong>{p.titulo}</strong></Link> },
       { titulo: 'Disciplina', render: (p) => p.disciplina?.nome || '—' },
+      { titulo: 'Elaborada por', render: (p) => p.professor?.nome || '—' },
       { titulo: 'Turma', render: (p) => p.turma?.nome || '—' },
       { titulo: 'Aplicação', render: (p) => data(p.dataAplicacao) },
       { titulo: 'Questões', render: (p) => p._count?.questoes ?? 0 },

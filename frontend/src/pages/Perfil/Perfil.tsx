@@ -26,7 +26,7 @@ export default function Perfil() {
         <button className="btn btn-primary"><Save size={16} /> Salvar alterações</button></div>
       {erro && <div className="error-box">{erro}</div>}{msg && <div className="card" style={{ marginBottom: 12 }}>{msg}</div>}
       <section className="card section-card" style={{ padding: 20 }}>
-        <h3>{u.nome}</h3><p className="muted">{perfis[u.tipo]} · {u.escola?.nome || 'Sem escola'}</p>
+        <h3>{u.nome}</h3><p className="muted">{perfis[u.tipo]}{u.disciplina?.nome ? ` de ${u.disciplina.nome}` : ''} · {u.escola?.nome || 'Sem escola'}</p>
         <div className="grid grid-4" style={{ gridTemplateColumns: '1fr 1fr', marginTop: 16 }}>
           <div className="field"><label>Nome completo</label><input value={nome} onChange={(e) => setNome(e.target.value)} /></div>
           <div className="field"><label>E-mail</label><input type="email" value={email} onChange={(e) => setEmail(e.target.value)} /></div>

@@ -4,7 +4,7 @@ import '../pages/Module.css';
 
 export type Campo = {
   name: string; label: string; type?: 'text' | 'email' | 'password' | 'select' | 'checks';
-  options?: { value: string | number; label: string }[]; required?: boolean; placeholder?: string;
+  options?: { value: string | number; label: string }[]; required?: boolean; placeholder?: string; visivelSe?: (v: Record<string, any>) => boolean;
 };
 type Props = {
   titulo: string; subtitulo?: string; campos: Campo[]; inicial?: Record<string, any>; rotulo?: string;
@@ -19,7 +19,7 @@ export function FormModal({ titulo, subtitulo, campos, inicial, rotulo = 'Salvar
 
   async function submit(e: FormEvent) {
     e.preventDefault(); setErro('');
-    const falta = campos.find((c) => c.required && c.type !== 'checks' && !String(v[c.name]).trim());
+    const falta = campos.find((c) => (!c.visivelSe || c.visivelSe(v)) && c.required && c.type !== 'checks' && !String(v[c.name]).trim());
     if (falta) { setErro(`Preencha o campo "${falta.label}".`); return; }
     setLoading(true);
     try { await onSubmit(v); onClose(); }
@@ -31,7 +31,7 @@ export function FormModal({ titulo, subtitulo, campos, inicial, rotulo = 'Salvar
       <div className="modal-head"><div><h3>{titulo}</h3>{subtitulo && <p className="card-subtitle">{subtitulo}</p>}</div><button type="button" className="icon-btn" onClick={onClose}><X size={16} /></button></div>
       {erro && <div className="error-box">{erro}</div>}
       <form onSubmit={submit}>
-        {campos.map((c) => (
+        {campos.filter((c) => !c.visivelSe || c.visivelSe(v)).map((c) => (
           <div className="field" key={c.name} style={{ marginBottom: 12 }}>
             <label>{c.label}{c.required ? ' *' : ''}</label>
             {c.type === 'select' ? (
