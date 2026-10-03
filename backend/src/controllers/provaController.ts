@@ -34,6 +34,22 @@ export async function listarProvas(req: Request, res: Response) {
   }
 }
 
+function validarQuestoes(questoes: any, status?: string) {
+  if (!Array.isArray(questoes)) return status === "PUBLICADA" ? "Adicione ao menos uma questão para publicar." : null;
+  if (status === "PUBLICADA" && questoes.length === 0) return "Adicione ao menos uma questão para publicar.";
+  for (const [i, q] of questoes.entries()) {
+    if (!["A", "B", "C", "D", "E"].includes(String(q.resposta || "").toUpperCase())) return `Defina o gabarito (A a E) da questão ${i + 1}.`;
+    if (!(Number(q.valor ?? 1) > 0)) return `O valor da questão ${i + 1} deve ser maior que zero.`;
+  }
+  return null;
+}
+
+// O professor que elabora a prova precisa dar aula na turma escolhida.
+async function professorDaTurma(professorId: number | null, turmaId?: number | null) {
+  if (!professorId || !turmaId) return true;
+  return !!(await prisma.professorTurma.findFirst({ where: { professorId, turmaId } }));
+}
+
 async function validarRelacionamentos(req: Request, body: any) {
   const escolaId = req.usuario?.escolaId;
   const [turma, disciplina, professor] = await Promise.all([
@@ -67,12 +83,18 @@ export async function criarProva(req: Request, res: Response) {
     if (turmaId && !turma) return res.status(404).json({ mensagem: "Turma não encontrada." });
     if (disciplinaId && !disciplina) return res.status(404).json({ mensagem: "Disciplina não encontrada." });
 
+    const erroQuestoes = validarQuestoes(questoes, req.body.status);
+    if (erroQuestoes) return res.status(400).json({ mensagem: erroQuestoes });
+
     const professorId = req.usuario.tipo === "PROFESSOR" ? req.usuario.id : (req.body.professorId ? Number(req.body.professorId) : null);
 
+    let professor: any = null;
     if (professorId) {
-      const professor = await prisma.usuario.findFirst({ where: { id: professorId, escolaId: req.usuario.escolaId, tipo: "PROFESSOR", ativo: true } });
+      professor = await prisma.usuario.findFirst({ where: { id: professorId, escolaId: req.usuario.escolaId, tipo: "PROFESSOR", ativo: true } });
       if (!professor) return res.status(404).json({ mensagem: "Professor não encontrado." });
     }
+    if (!(await professorDaTurma(professorId, turma?.id))) return res.status(400).json({ mensagem: "Este professor não dá aula na turma escolhida." });
+    const disciplinaFinalId = disciplina?.id ?? professor?.disciplinaId ?? null;
 
     const prova = await prisma.prova.create({
       data: {
@@ -82,7 +104,7 @@ export async function criarProva(req: Request, res: Response) {
         status: req.body.status || "RASCUNHO",
         escolaId: req.usuario.escolaId,
         turmaId: turma?.id ?? null,
-        disciplinaId: disciplina?.id ?? null,
+        disciplinaId: disciplinaFinalId,
         professorId,
         questoes: {
           create: Array.isArray(questoes) ? questoes.map((q: any, index: number) => ({
@@ -119,9 +141,20 @@ export async function atualizarProva(req: Request, res: Response) {
       descricao: req.body.descricao !== undefined ? (req.body.descricao ? String(req.body.descricao).trim() : null) : undefined,
       dataAplicacao: req.body.dataAplicacao !== undefined ? (req.body.dataAplicacao ? new Date(req.body.dataAplicacao) : null) : undefined,
       status: req.body.status !== undefined ? req.body.status : undefined,
-      turmaId: req.body.turmaId !== undefined ? Number(req.body.turmaId) : undefined,
-      disciplinaId: req.body.disciplinaId !== undefined ? Number(req.body.disciplinaId) : undefined
+      turmaId: req.body.turmaId !== undefined ? (req.body.turmaId ? Number(req.body.turmaId) : null) : undefined,
+      disciplinaId: req.body.disciplinaId !== undefined ? (req.body.disciplinaId ? Number(req.body.disciplinaId) : null) : undefined,
+      professorId: req.usuario?.tipo !== "PROFESSOR" && req.body.professorId !== undefined ? (req.body.professorId ? Number(req.body.professorId) : null) : undefined
     };
+
+    const erroQuestoes = validarQuestoes(req.body.questoes, req.body.status);
+    if (erroQuestoes) return res.status(400).json({ mensagem: erroQuestoes });
+    const profFinal = data.professorId !== undefined ? data.professorId : existente.professorId;
+    const turmaFinal = data.turmaId !== undefined ? data.turmaId : existente.turmaId;
+    if (data.professorId) {
+      const prof = await prisma.usuario.findFirst({ where: { id: data.professorId, escolaId: req.usuario?.escolaId, tipo: "PROFESSOR", ativo: true } });
+      if (!prof) return res.status(404).json({ mensagem: "Professor não encontrado." });
+    }
+    if (!(await professorDaTurma(profFinal, turmaFinal))) return res.status(400).json({ mensagem: "Este professor não dá aula na turma escolhida." });
 
     if (req.body.turmaId) {
       const turma = await prisma.turma.findFirst({ where: { id: Number(req.body.turmaId), escolaId: req.usuario?.escolaId } });

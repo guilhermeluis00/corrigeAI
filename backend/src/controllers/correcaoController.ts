@@ -52,6 +52,7 @@ export async function processarFoto(req: Request, res: Response) {
     const form = new FormData();
     form.append("imagem", new Blob([imageBuffer], { type: req.file.mimetype }), req.file.originalname);
     form.append("provaId", String(provaId));
+    form.append("totalQuestoes", String(prova.questoes.length));
 
     let pythonResponse: globalThis.Response;
 

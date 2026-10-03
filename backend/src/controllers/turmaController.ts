@@ -171,7 +171,7 @@ export async function listarProfessores(req: Request, res: Response) {
   try {
     const professores = await prisma.usuario.findMany({
       where: { escolaId: req.usuario?.escolaId, tipo: "PROFESSOR", ativo: true },
-      select: { id: true, nome: true, email: true },
+      select: { id: true, nome: true, email: true, disciplina: { select: { id: true, nome: true } } },
       orderBy: { nome: "asc" }
     });
     return res.json(professores);

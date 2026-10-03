@@ -55,6 +55,7 @@ model Usuario {
   tipo           TipoUsuario
   ativo          Boolean          @default(true)
   escolaId       Int?
+  disciplinaId Int?
   createdAt      DateTime         @default(now())
   updatedAt      DateTime         @updatedAt
 
@@ -62,6 +63,7 @@ model Usuario {
   professores    ProfessorTurma[]
   provas         Prova[]          @relation("ProfessorProvas")
   resultados     Resultado[]
+  disciplina   Disciplina? @relation("ProfessorDisciplina", fields: [disciplinaId], references: [id], onDelete: SetNull)
 }
 
 model Turma {
@@ -127,6 +129,7 @@ model Disciplina {
 
   @@unique([escolaId, nome])
   @@index([escolaId])
+  professores Usuario[] @relation("ProfessorDisciplina")
 }
 
 model Prova {

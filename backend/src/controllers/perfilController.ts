@@ -7,7 +7,7 @@ export async function perfil(req: Request, res: Response) {
     if (!req.usuario) return res.status(401).json({ mensagem: "Usuário não autenticado." });
     const usuario = await prisma.usuario.findUnique({
       where: { id: req.usuario.id },
-      select: { id: true, nome: true, email: true, tipo: true, ativo: true, escola: { select: { id: true, nome: true } } }
+      select: { id: true, nome: true, email: true, tipo: true, ativo: true, escola: { select: { id: true, nome: true } }, disciplina: { select: { id: true, nome: true } } }
     });
     if (!usuario) return res.status(404).json({ mensagem: "Usuário não encontrado." });
     return res.json({ usuario });
@@ -31,7 +31,7 @@ export async function atualizarPerfil(req: Request, res: Response) {
     const usuario = await prisma.usuario.update({
       where: { id: req.usuario.id },
       data,
-      select: { id: true, nome: true, email: true, tipo: true, ativo: true, escolaId: true, escola: { select: { id: true, nome: true } } }
+      select: { id: true, nome: true, email: true, tipo: true, ativo: true, escolaId: true, escola: { select: { id: true, nome: true } }, disciplina: { select: { id: true, nome: true } } }
     });
 
     return res.json({ mensagem: "Perfil atualizado com sucesso.", usuario });

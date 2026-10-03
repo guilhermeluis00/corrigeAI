@@ -2,12 +2,13 @@ import bcrypt from "bcryptjs";
 import type { Request, Response } from "express";
 import prisma from "../prisma.js";
 import { gerarToken } from "../utils/jwt.js";
+import { disciplinaIdPorNome, garantirDisciplinas } from "../utils/disciplinas.js";
 
 export async function listarUsuarios(req: Request, res: Response) {
   try {
     const usuarios = await prisma.usuario.findMany({
       where: { escolaId: req.usuario?.escolaId },
-      select: { id: true, nome: true, email: true, tipo: true, ativo: true, createdAt: true },
+      select: { id: true, nome: true, email: true, tipo: true, ativo: true, createdAt: true, disciplina: { select: { id: true, nome: true } } },
       orderBy: { nome: "asc" }
     });
     return res.json(usuarios);
@@ -30,8 +31,14 @@ export async function criarUsuario(req: Request, res: Response) {
     if (existe) return res.status(409).json({ mensagem: "E-mail já cadastrado." });
 
     const senhaHash = await bcrypt.hash(String(senha), 10);
+    let disciplinaId: number | null = null;
+    if (tipo === "PROFESSOR") {
+      disciplinaId = await disciplinaIdPorNome(req.usuario.escolaId, String(req.body.disciplina || ""));
+      if (!disciplinaId) return res.status(400).json({ mensagem: "Selecione a disciplina do professor." });
+    }
+
     const usuario = await prisma.usuario.create({
-      data: { nome: String(nome).trim(), email: emailNormalizado, senha: senhaHash, tipo, escolaId: req.usuario.escolaId }
+      data: { nome: String(nome).trim(), email: emailNormalizado, senha: senhaHash, tipo, escolaId: req.usuario.escolaId, disciplinaId }
     });
 
     return res.status(201).json({
@@ -54,12 +61,13 @@ export async function atualizarUsuario(req: Request, res: Response) {
       nome: req.body.nome !== undefined ? String(req.body.nome).trim() : undefined,
       email: req.body.email !== undefined ? String(req.body.email).trim().toLowerCase() : undefined,
       tipo: req.body.tipo !== undefined ? req.body.tipo : undefined,
+      disciplinaId: req.body.disciplina ? ((await disciplinaIdPorNome(req.usuario!.escolaId!, String(req.body.disciplina))) ?? undefined) : undefined,
       ativo: req.body.ativo !== undefined ? Boolean(req.body.ativo) : undefined
     };
 
     if (req.body.senha) data.senha = await bcrypt.hash(String(req.body.senha), 10);
 
-    const usuario = await prisma.usuario.update({ where: { id }, data, select: { id: true, nome: true, email: true, tipo: true, ativo: true } });
+    const usuario = await prisma.usuario.update({ where: { id }, data, select: { id: true, nome: true, email: true, tipo: true, ativo: true, disciplina: { select: { id: true, nome: true } } } });
     return res.json({ mensagem: "Usuário atualizado com sucesso.", usuario });
   } catch (error) {
     console.error("Erro ao atualizar usuário:", error);
@@ -124,6 +132,7 @@ export async function criarEscola(req: Request, res: Response) {
       return { escola, usuario };
     });
 
+    await garantirDisciplinas(escola.id);
     const token = gerarToken({ id: usuario.id, tipo: usuario.tipo, escolaId: usuario.escolaId });
     return res.status(201).json({
       mensagem: "Escola cadastrada com sucesso.",

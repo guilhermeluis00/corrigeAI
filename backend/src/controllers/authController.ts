@@ -1,6 +1,7 @@
 import bcrypt from "bcryptjs";
 import type { Request, Response } from "express";
 import prisma from "../prisma.js";
+import { disciplinaIdPorNome } from "../utils/disciplinas.js";
 import { gerarToken } from "../utils/jwt.js";
 
 const TIPOS_VALIDOS = ["PROFESSOR", "COORDENADOR", "DIRETOR"] as const;
@@ -13,6 +14,7 @@ function usuarioPublico(usuario: any) {
     tipo: usuario.tipo,
     ativo: usuario.ativo,
     escolaId: usuario.escolaId,
+    disciplina: usuario.disciplina ? { id: usuario.disciplina.id, nome: usuario.disciplina.nome } : null,
     escola: usuario.escola
       ? { id: usuario.escola.id, nome: usuario.escola.nome }
       : null
@@ -30,7 +32,7 @@ export async function login(req: Request, res: Response) {
 
     const usuario = await prisma.usuario.findUnique({
       where: { email },
-      include: { escola: { select: { id: true, nome: true } } }
+      include: { escola: { select: { id: true, nome: true } }, disciplina: { select: { id: true, nome: true } } }
     });
 
     if (!usuario) {
@@ -97,9 +99,15 @@ export async function cadastro(req: Request, res: Response) {
       if (!escola) return res.status(404).json({ mensagem: "Código de escola inválido." });
     }
 
+    let disciplinaId: number | null = null;
+    if (tipo === "PROFESSOR") {
+      disciplinaId = await disciplinaIdPorNome(escolaId as number, String(req.body.disciplina || ""));
+      if (!disciplinaId) return res.status(400).json({ mensagem: "Selecione a disciplina do professor." });
+    }
+
     const usuario = await prisma.usuario.create({
-      data: { nome, email, senha: await bcrypt.hash(senha, 10), tipo: tipo as any, escolaId: tipo === "DIRETOR" ? null : escolaId },
-      include: { escola: { select: { id: true, nome: true } } }
+      data: { nome, email, senha: await bcrypt.hash(senha, 10), tipo: tipo as any, escolaId: tipo === "DIRETOR" ? null : escolaId, disciplinaId },
+      include: { escola: { select: { id: true, nome: true } }, disciplina: { select: { id: true, nome: true } } }
     });
 
     return res.status(201).json({ mensagem: "Usuário cadastrado com sucesso.", usuario: usuarioPublico(usuario) });
@@ -115,7 +123,7 @@ export async function me(req: Request, res: Response) {
 
     const usuario = await prisma.usuario.findUnique({
       where: { id: req.usuario.id },
-      include: { escola: { select: { id: true, nome: true } } }
+      include: { escola: { select: { id: true, nome: true } }, disciplina: { select: { id: true, nome: true } } }
     });
 
     if (!usuario) return res.status(404).json({ mensagem: "Usuário não encontrado." });

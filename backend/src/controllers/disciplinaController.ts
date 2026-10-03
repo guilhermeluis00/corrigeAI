@@ -1,9 +1,12 @@
 import type { Request, Response } from "express";
 import prisma from "../prisma.js";
+import { garantirDisciplinas } from "../utils/disciplinas.js";
 
 export async function listarDisciplinas(req: Request, res: Response) {
   try {
     if (!req.usuario?.escolaId) return res.json([]);
+
+    if ((await prisma.disciplina.count({ where: { escolaId: req.usuario.escolaId } })) === 0) await garantirDisciplinas(req.usuario.escolaId);
 
     const q = String(req.query.q || "").trim();
     const where: any = { escolaId: req.usuario.escolaId };
