@@ -34,6 +34,7 @@ model Escola {
   id          Int          @id @default(autoincrement())
   nome        String
   cnpj        String       @unique
+  codigo      String       @unique // Código de 11 caracteres repassado à equipe para o cadastro.
   email       String?
   telefone    String?
   endereco    String?
@@ -55,7 +56,6 @@ model Usuario {
   tipo           TipoUsuario
   ativo          Boolean          @default(true)
   escolaId       Int?
-  disciplinaId Int?
   createdAt      DateTime         @default(now())
   updatedAt      DateTime         @updatedAt
 
@@ -63,7 +63,7 @@ model Usuario {
   professores    ProfessorTurma[]
   provas         Prova[]          @relation("ProfessorProvas")
   resultados     Resultado[]
-  disciplina   Disciplina? @relation("ProfessorDisciplina", fields: [disciplinaId], references: [id], onDelete: SetNull)
+  disciplinas   Disciplina[]     @relation("ProfessorDisciplinas")
 }
 
 model Turma {
@@ -120,6 +120,7 @@ model Disciplina {
   id             Int          @id @default(autoincrement())
   nome           String
   descricao      String?
+  curso          String?      // Curso técnico da disciplina; vazio = base comum (ensino médio).
   escolaId       Int?
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
@@ -129,7 +130,7 @@ model Disciplina {
 
   @@unique([escolaId, nome])
   @@index([escolaId])
-  professores Usuario[] @relation("ProfessorDisciplina")
+  professores Usuario[] @relation("ProfessorDisciplinas")
 }
 
 model Prova {

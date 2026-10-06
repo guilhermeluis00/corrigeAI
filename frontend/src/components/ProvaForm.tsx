@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Plus, Trash2 } from 'lucide-react';
 import { AppShell } from './AppShell';
 import { api, getUsuario } from '../services/api';
+import { nomesDisciplinas } from '../services/disciplinas';
 import '../pages/Module.css';
 
 const LETRAS = ['A', 'B', 'C', 'D', 'E'] as const;
@@ -27,7 +28,8 @@ export default function ProvaForm({ id }: { id?: string }) {
         const [t, d] = await Promise.all([api.turmas(), api.disciplinas()]);
         setTurmas(t); setDisciplinas(d);
         let profs: any[] = [];
-        if (ehProfessor) { const p = await api.perfil(); profs = [{ id: eu.id, nome: p.usuario.nome, disciplina: p.usuario.disciplina }]; }
+        if (ehProfessor) { const p = await api.perfil(); profs = [{ id: eu.id, nome: p.usuario.nome, disciplinas: p.usuario.disciplinas }];
+          if (!id && profs[0].disciplinas?.length === 1) set('disciplinaId', String(profs[0].disciplinas[0].id)); }
         else profs = await api.professores();
         setProfessores(profs);
         if (id) {
@@ -41,13 +43,15 @@ export default function ProvaForm({ id }: { id?: string }) {
   }, [id]);
 
   const prof = professores.find((p) => String(p.id) === f.professorId);
-  // Ao escolher o professor, a disciplina dele é preenchida e só aparecem as turmas em que ele dá aula.
+  // Ao escolher o professor, só aparecem as disciplinas que ele leciona (preenchida se for uma só) e as turmas em que ele dá aula.
   function escolherProfessor(v: string) {
     const p = professores.find((x) => String(x.id) === v);
-    const d = p?.disciplina ? disciplinas.find((x) => x.nome === p.disciplina.nome) : null;
-    setF((s) => ({ ...s, professorId: v, disciplinaId: d ? String(d.id) : s.disciplinaId, turmaId: '' }));
+    const ds: any[] = p?.disciplinas || [];
+    const manter = (atual: string) => (!ds.length || ds.some((d) => String(d.id) === atual) ? atual : '');
+    setF((s) => ({ ...s, professorId: v, disciplinaId: ds.length === 1 ? String(ds[0].id) : manter(s.disciplinaId), turmaId: '' }));
   }
   const turmasOpcoes = useMemo(() => (!f.professorId || ehProfessor ? turmas : turmas.filter((t) => (t.professores || []).some((x: any) => String(x.professorId) === f.professorId))), [turmas, f.professorId]);
+  const disciplinasOpcoes = prof?.disciplinas?.length ? disciplinas.filter((d) => String(d.id) === f.disciplinaId || prof.disciplinas.some((x: any) => x.id === d.id)) : disciplinas;
   const setQ = (i: number, k: string, v: string) => setQs((a) => a.map((q, j) => (j === i ? { ...q, [k]: v } : q)));
 
   // Gera as questões só com o gabarito (ex.: provas no formato ENEM, cujo caderno fica à parte).
@@ -90,23 +94,23 @@ export default function ProvaForm({ id }: { id?: string }) {
           <button className="btn btn-primary" disabled={salvando || carregando} onClick={() => salvar('PUBLICADA')}>Publicar</button></div></div>
       {erro && <div className="error-box">{erro}</div>}
       <section className="card card-pad"><h3 className="card-title">Informações da prova</h3><p className="card-subtitle">Defina o professor, a turma, a disciplina e a data.</p><div style={{ height: 16 }} />
-        <div className="grid grid-4" style={{ gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+        <div className="grid grid-2" style={{ gap: 14 }}>
           <div className="field"><label>Título *</label><input value={f.titulo} onChange={(e) => set('titulo', e.target.value)} placeholder="Ex.: Função afim" /></div>
-          {sel('professorId', 'Professor que elaborou *', professores.map((p) => ({ value: p.id, label: p.disciplina?.nome ? `${p.nome} — ${p.disciplina.nome}` : p.nome })), { disabled: ehProfessor, onChange: escolherProfessor })}
+          {sel('professorId', 'Professor que elaborou *', professores.map((p) => ({ value: p.id, label: p.disciplinas?.length ? `${p.nome} — ${nomesDisciplinas(p)}` : p.nome })), { disabled: ehProfessor, onChange: escolherProfessor })}
           {sel('turmaId', 'Turma *', turmasOpcoes.map((t) => ({ value: t.id, label: `${t.codigo} — ${t.nome}` })), { vazio: turmasOpcoes.length ? 'Selecione' : 'Nenhuma turma disponível' })}
-          {sel('disciplinaId', 'Disciplina', disciplinas.map((d) => ({ value: d.id, label: d.nome })), { disabled: !!prof?.disciplina })}
+          {sel('disciplinaId', 'Disciplina', disciplinasOpcoes.map((d) => ({ value: d.id, label: d.nome })), { disabled: prof?.disciplinas?.length === 1 && !!f.disciplinaId })}
           <div className="field"><label>Data de aplicação</label><input type="date" value={f.dataAplicacao} onChange={(e) => set('dataAplicacao', e.target.value)} /></div>
           <div className="field"><label>Descrição</label><input value={f.descricao} onChange={(e) => set('descricao', e.target.value)} placeholder="Orientações ou observações" /></div>
         </div>
         {f.professorId && !ehProfessor && turmasOpcoes.length === 0 && <p className="muted" style={{ marginTop: 10 }}>Este professor ainda não está vinculado a nenhuma turma. Vincule em Turmas.</p>}
       </section>
-      <div style={{ display: 'grid', gridTemplateColumns: '1.6fr 1fr', gap: 18, marginTop: 18, alignItems: 'start' }}>
+      <div className="prova-layout">
         <div style={{ display: 'grid', gap: 18 }}>{qs.map((q, i) => (
           <section className="card card-pad" key={i}>
             <div style={{ display: 'flex', justifyContent: 'space-between' }}><div><h3 className="card-title">Questão {i + 1}</h3><p className="card-subtitle">Enunciado, alternativas e gabarito.</p></div>
               <button type="button" className="icon-btn" title="Remover" disabled={qs.length === 1} onClick={() => setQs((a) => a.filter((_, j) => j !== i))}><Trash2 size={15} /></button></div>
             <div className="field" style={{ margin: '12px 0' }}><label>Enunciado</label><textarea rows={3} value={q.enunciado} onChange={(e) => setQ(i, 'enunciado', e.target.value)} /></div>
-            <div className="grid grid-4" style={{ gridTemplateColumns: '1fr 1fr', gap: 12 }}>{LETRAS.map((l) => <div className="field" key={l}><label>Alternativa {l}</label><input value={q[`alternativa${l}`]} onChange={(e) => setQ(i, `alternativa${l}`, e.target.value)} /></div>)}
+            <div className="grid grid-2" style={{ gap: 12 }}>{LETRAS.map((l) => <div className="field" key={l}><label>Alternativa {l}</label><input value={q[`alternativa${l}`]} onChange={(e) => setQ(i, `alternativa${l}`, e.target.value)} /></div>)}
               <div className="field"><label>Gabarito</label><select value={q.resposta} onChange={(e) => setQ(i, 'resposta', e.target.value)}><option value="">Selecione</option>{LETRAS.map((l) => <option key={l}>{l}</option>)}</select></div>
               <div className="field"><label>Valor</label><input value={q.valor} onChange={(e) => setQ(i, 'valor', e.target.value)} /></div></div>
           </section>))}</div>

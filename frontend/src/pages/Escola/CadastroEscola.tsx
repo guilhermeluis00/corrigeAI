@@ -31,10 +31,10 @@ export default function CadastroEscola() {
         <img src="/assets/logo-horizontal.png" alt="CorrigeAI" />
         {escola ? (<>
           <h2>Escola cadastrada</h2><p>{escola.nome}</p>
-          <div className="card" style={{ textAlign: 'center', margin: '16px 0' }}>
+          <div className="card card-pad" style={{ textAlign: 'center', margin: '16px 0' }}>
             <div className="muted">Código da escola</div>
-            <div style={{ fontSize: 44, fontWeight: 700 }}>{escola.id}</div>
-            <button type="button" className="btn" onClick={() => { navigator.clipboard?.writeText(String(escola.id)); setCopiado(true); }}>{copiado ? 'Copiado' : 'Copiar código'}</button>
+            <div style={{ fontSize: 30, fontWeight: 700, fontFamily: 'monospace', wordBreak: 'break-all' }}>{escola.codigo}</div>
+            <button type="button" className="btn" onClick={() => { navigator.clipboard?.writeText(escola.codigo); setCopiado(true); }}>{copiado ? 'Copiado' : 'Copiar código'}</button>
           </div>
           <p className="muted">Você poderá consultar este código depois em Gestão da escola.</p>
           <button className="btn btn-primary auth-submit" onClick={() => nav('/dashboard')}>Ir para o painel</button>

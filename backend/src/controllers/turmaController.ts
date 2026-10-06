@@ -1,5 +1,6 @@
 import type { Request, Response } from "express";
 import prisma from "../prisma.js";
+import { selectDisciplinas } from "../utils/disciplinas.js";
 
 function turmaWherePorPerfil(req: Request) {
   if (!req.usuario?.escolaId) return { id: -1 };
@@ -171,7 +172,7 @@ export async function listarProfessores(req: Request, res: Response) {
   try {
     const professores = await prisma.usuario.findMany({
       where: { escolaId: req.usuario?.escolaId, tipo: "PROFESSOR", ativo: true },
-      select: { id: true, nome: true, email: true, disciplina: { select: { id: true, nome: true } } },
+      select: { id: true, nome: true, email: true, disciplinas: selectDisciplinas },
       orderBy: { nome: "asc" }
     });
     return res.json(professores);

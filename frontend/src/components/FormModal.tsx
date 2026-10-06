@@ -19,7 +19,7 @@ export function FormModal({ titulo, subtitulo, campos, inicial, rotulo = 'Salvar
 
   async function submit(e: FormEvent) {
     e.preventDefault(); setErro('');
-    const falta = campos.find((c) => (!c.visivelSe || c.visivelSe(v)) && c.required && c.type !== 'checks' && !String(v[c.name]).trim());
+    const falta = campos.find((c) => (!c.visivelSe || c.visivelSe(v)) && c.required && (c.type === 'checks' ? !v[c.name].length : !String(v[c.name]).trim()));
     if (falta) { setErro(`Preencha o campo "${falta.label}".`); return; }
     setLoading(true);
     try { await onSubmit(v); onClose(); }

@@ -31,7 +31,7 @@ import {
 } from "./controllers/provaController.js";
 import { listarResultados, buscarResultado } from "./controllers/resultadoController.js";
 import { relatorios } from "./controllers/relatorioController.js";
-import { listarDisciplinas, criarDisciplina, atualizarDisciplina, excluirDisciplina } from "./controllers/disciplinaController.js";
+import { listarDisciplinas, disciplinasDaEscola, criarDisciplina, atualizarDisciplina, excluirDisciplina } from "./controllers/disciplinaController.js";
 import {
   listarUsuarios,
   criarUsuario,
@@ -52,6 +52,7 @@ const router = Router();
 router.post("/auth/login", login);
 router.post("/auth/cadastro", cadastro);
 router.get("/auth/me", autenticar, me);
+router.get("/escolas/:codigo/disciplinas", disciplinasDaEscola);
 
 router.get("/perfil", autenticar, perfil);
 router.put("/perfil", autenticar, atualizarPerfil);

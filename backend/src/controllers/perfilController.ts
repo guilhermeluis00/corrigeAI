@@ -1,13 +1,14 @@
 import bcrypt from "bcryptjs";
 import type { Request, Response } from "express";
 import prisma from "../prisma.js";
+import { disciplinaIdsPorNomes, selectDisciplinas } from "../utils/disciplinas.js";
 
 export async function perfil(req: Request, res: Response) {
   try {
     if (!req.usuario) return res.status(401).json({ mensagem: "Usuário não autenticado." });
     const usuario = await prisma.usuario.findUnique({
       where: { id: req.usuario.id },
-      select: { id: true, nome: true, email: true, tipo: true, ativo: true, escola: { select: { id: true, nome: true } }, disciplina: { select: { id: true, nome: true } } }
+      select: { id: true, nome: true, email: true, tipo: true, ativo: true, escola: { select: { id: true, nome: true } }, disciplinas: selectDisciplinas }
     });
     if (!usuario) return res.status(404).json({ mensagem: "Usuário não encontrado." });
     return res.json({ usuario });
@@ -28,10 +29,17 @@ export async function atualizarPerfil(req: Request, res: Response) {
 
     if (req.body.senha) data.senha = await bcrypt.hash(String(req.body.senha), 10);
 
+    // O professor pode alterar as disciplinas que leciona.
+    if (req.usuario.tipo === "PROFESSOR" && req.usuario.escolaId && req.body.disciplinas !== undefined) {
+      const disciplinas = await disciplinaIdsPorNomes(req.usuario.escolaId, req.body.disciplinas);
+      if (!disciplinas.length) return res.status(400).json({ mensagem: "Selecione ao menos uma disciplina." });
+      data.disciplinas = { set: disciplinas };
+    }
+
     const usuario = await prisma.usuario.update({
       where: { id: req.usuario.id },
       data,
-      select: { id: true, nome: true, email: true, tipo: true, ativo: true, escolaId: true, escola: { select: { id: true, nome: true } }, disciplina: { select: { id: true, nome: true } } }
+      select: { id: true, nome: true, email: true, tipo: true, ativo: true, escolaId: true, escola: { select: { id: true, nome: true } }, disciplinas: selectDisciplinas }
     });
 
     return res.json({ mensagem: "Perfil atualizado com sucesso.", usuario });

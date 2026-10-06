@@ -1,6 +1,7 @@
 import "dotenv/config";
 import bcrypt from "bcryptjs";
 import prisma from "../src/prisma.js";
+import { gerarCodigoEscola } from "../src/utils/codigoEscola.js";
 
 async function main() {
   const senha = await bcrypt.hash("CorrigeAI@2026", 10);
@@ -14,6 +15,7 @@ async function main() {
     create: {
       nome: "Escola CorrigeAI",
       cnpj: "00000000000100",
+      codigo: gerarCodigoEscola(),
       email: "contato@corrigeai.com",
       telefone: "(85) 0000-0000"
     }
@@ -34,7 +36,7 @@ async function main() {
   }
 
   console.log("Seed concluído.");
-  console.log(`Escola: ${escola.nome} (id ${escola.id})`);
+  console.log(`Escola: ${escola.nome} (código ${escola.codigo})`);
   console.log("Senha dos usuários de desenvolvimento: CorrigeAI@2026");
 }
 

@@ -90,11 +90,12 @@ export async function criarProva(req: Request, res: Response) {
 
     let professor: any = null;
     if (professorId) {
-      professor = await prisma.usuario.findFirst({ where: { id: professorId, escolaId: req.usuario.escolaId, tipo: "PROFESSOR", ativo: true } });
+      professor = await prisma.usuario.findFirst({ where: { id: professorId, escolaId: req.usuario.escolaId, tipo: "PROFESSOR", ativo: true }, include: { disciplinas: { select: { id: true } } } });
       if (!professor) return res.status(404).json({ mensagem: "Professor não encontrado." });
     }
     if (!(await professorDaTurma(professorId, turma?.id))) return res.status(400).json({ mensagem: "Este professor não dá aula na turma escolhida." });
-    const disciplinaFinalId = disciplina?.id ?? professor?.disciplinaId ?? null;
+    // Sem disciplina informada, usa a do professor quando ele leciona apenas uma.
+    const disciplinaFinalId = disciplina?.id ?? (professor?.disciplinas.length === 1 ? professor.disciplinas[0].id : null);
 
     const prova = await prisma.prova.create({
       data: {

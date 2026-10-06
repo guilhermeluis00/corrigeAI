@@ -14,3 +14,5 @@
 .cor-dot.on{background:#eaf0f4;color:#0F2A43}.cor-dot.ok{background:#e5f8f2;color:#0B7A5E}
 .cor-nota{font-size:54px;font-weight:800;letter-spacing:-.02em;line-height:1}
 .cor-res{padding:18px;display:grid;gap:14px}
+@media(max-width:900px){.cor-grid{grid-template-columns:minmax(0,1fr)}}
+@media(max-width:600px){.cor-two{grid-template-columns:1fr}.cor-form,.cor-res{padding:14px}.cor-drop{min-height:190px;padding:16px}.cor-btns .btn{flex:1 1 140px}.cor-step{padding:12px 14px;gap:10px;font-size:14px}.cor-nota{font-size:44px}.cor-res table{min-width:0}.cor-res th,.cor-res td{padding:10px 8px}}

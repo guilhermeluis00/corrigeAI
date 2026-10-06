@@ -4,6 +4,7 @@
   background: #f4f6f8;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
+  -webkit-text-size-adjust: 100%;
   --navy: #0F2A43;
   --navy-2: #153a58;
   --teal: #12A37F;
@@ -30,7 +31,7 @@ button { cursor: pointer; }
 .page-title { margin:0 0 5px; font-size:28px; letter-spacing:-.03em; }
 .page-subtitle { margin:0; color:var(--muted); font-size:14px; }
 .actions { display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
-.btn { border:1px solid var(--border); background:#fff; color:var(--text); border-radius:8px; min-height:40px; padding:0 15px; font-weight:700; transition:.16s ease; }
+.btn { display:inline-flex; align-items:center; justify-content:center; gap:7px; text-align:center; border:1px solid var(--border); background:#fff; color:var(--text); border-radius:8px; min-height:40px; padding:0 15px; font-weight:700; transition:.16s ease; }
 .btn:hover { border-color:#c8d2da; background:#fbfcfd; }
 .btn-primary { background:var(--teal); border-color:var(--teal); color:#fff; }
 .btn-primary:hover { background:var(--teal-dark); border-color:var(--teal-dark); }
@@ -70,4 +71,13 @@ tr:last-child td { border-bottom:none; }
 .form-grid .full { grid-column:1/-1; }
 .page-actions { display:flex; justify-content:flex-end; gap:10px; margin-top:18px; }
 @media (max-width: 1000px) { .grid-4 { grid-template-columns:repeat(2,minmax(0,1fr)); } .grid-3 { grid-template-columns:1fr; } }
-@media (max-width: 700px) { .container { width:min(100% - 24px, 1180px); } .page { padding-top:18px; } .page-head { flex-direction:column; } .grid-4,.grid-2,.form-grid { grid-template-columns:1fr; } .search { width:100%; min-width:0; } }
+@media (max-width: 700px) {
+  .container { width:min(100% - 24px, 1180px); } .page { padding:18px 0 32px; }
+  .page-head { flex-direction:column; gap:14px; margin-bottom:16px; } .page-title { font-size:23px; }
+  .page-head > .actions, .page-head > .btn { width:100%; } .page-head > .actions .btn { flex:1; }
+  .grid { gap:12px; } .grid-2,.form-grid { grid-template-columns:1fr; } .grid-4 > * { min-width:0; overflow-wrap:anywhere; }
+  .card-pad { padding:14px; } .stat { padding:14px; } .stat-value { font-size:24px; }
+  th, td { padding:11px 12px; } .search { width:100%; min-width:0; flex:1 1 100%; }
+  .page-actions .btn { flex:1; }
+}
+@media (max-width: 340px) { .grid-4 { grid-template-columns:1fr; } }
